@@ -10,23 +10,19 @@ public:
   std::vector<std::pair<int,int>> pts;
 
   void print() {
-    std::vector<std::vector<char>> board(y_size);
-    for (auto &row: board) {
-      row = std::vector<char>(x_size);
-      for (auto &c: row) {
-        c = '.';
-      }
-    }
+    std::vector<std::vector<char>>
+      board(y_size, std::vector<char>(x_size, '.'));
     for (auto const& pair: this->pts) {
       board[pair.second][pair.first] = 'X';
     }
     std::string buf;
     for (auto const &row: board) {
+      buf = "";
       for (auto const &c: row) {
         buf += c;
         buf += ' ';
       }
-      buf += '\n';
+      std::cout << buf << std::endl;
     }
     std::cout << buf << std::endl;
   }
