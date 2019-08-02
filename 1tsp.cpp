@@ -87,33 +87,48 @@ Path closest_pair(Board b) {
       d2p.push(D2P {dist2(b.pts[i], b.pts[j]), i, j});
     }
   }
-  while (pairs_added < b.pts.size()) {
+  while (true) {
     auto next_pair = d2p.top();
     d2p.pop();
     if (visits[next_pair.pt1_i] < 2 && visits[next_pair.pt2_i] < 2) {
       neighbors[next_pair.pt1_i].push_back(next_pair.pt2_i);
       neighbors[next_pair.pt2_i].push_back(next_pair.pt1_i);
+      // See if there's a cyclic path created by adding this edge.
+      Path path = {{b.pts[next_pair.pt1_i], b.pts[next_pair.pt2_i]}};
+      int prev_i = next_pair.pt1_i;
+      int i = next_pair.pt2_i;
+      while (true) {
+        if (neighbors[i].size() < 2) {
+          // No outgoing neighbors => path ends here.
+          break;
+        } else if (i == next_pair.pt1_i) {
+          // If the condition holds, we've looped back to pt1. Check length.
+          if (path.pts.size() < b.pts.size()) {
+            // Reject the edge if we build a too-small cycle by including it.
+            neighbors[next_pair.pt1_i].pop_back();
+            neighbors[next_pair.pt2_i].pop_back();
+            break;
+          } else {
+            return path;
+          }
+        } else {
+          // No loop. Find the new neighbor and iterate.
+          if (neighbors[i][0] != prev_i) {
+            path.pts.push_back(b.pts[neighbors[i][0]]);
+            prev_i = i;
+            i = neighbors[i][0];
+          } else {
+            path.pts.push_back(b.pts[neighbors[i][1]]);
+            prev_i = i;
+            i = neighbors[i][1];
+          }
+        }
+      }
       pairs_added++;
       visits[next_pair.pt1_i]++;
       visits[next_pair.pt2_i]++;
     }
   }
-  // For convenience, start with first listed point on board.
-  Path path = {{b.pts[0]}};
-  int prev_i = -1;
-  int i = 0;
-  while (path.pts.size() < b.pts.size()) {
-    if (neighbors[i][0] != prev_i) {
-      path.pts.push_back(b.pts[neighbors[i][0]]);
-      prev_i = i;
-      i = neighbors[i][0];
-    } else {
-      path.pts.push_back(b.pts[neighbors[i][1]]);
-      prev_i = i;
-      i = neighbors[i][1];
-    }
-  }
-  return path;
 }
 
 int main() {
