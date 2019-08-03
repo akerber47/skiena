@@ -1,3 +1,4 @@
+#include <cmath>
 #include <iostream>
 #include <limits>
 #include <memory>
@@ -29,22 +30,35 @@ public:
   }
 };
 
+int dist2(std::pair<int,int> p1, std::pair<int,int> p2) {
+  return ((p2.first - p1.first) * (p2.first - p1.first)) +
+         ((p2.second - p1.second) * (p2.second - p1.second));
+}
+
+
 class Path {
 public:
   Path(std::vector<std::pair<int,int>> pts) : pts{pts} {};
 
   void print() {
+    std::cout << "Path {" << std::endl;
     for (auto const& pair : this->pts) {
-      std::cout << pair.first << ", " << pair.second << std::endl;
+      std::cout << "  " << pair.first << "," << pair.second << std::endl;
     }
+    std::cout << "}" << std::endl;
+    std::cout << "Length: " << this->length() << std::endl;
   }
+
+  float length() {
+    float l = 0;
+    for (int i = 0; i < this->pts.size() - 1; i++) {
+      l += sqrt(dist2(this->pts[i], this->pts[i+1]));
+    }
+    return l;
+  }
+
   std::vector<std::pair<int,int>> pts;
 };
-
-int dist2(std::pair<int,int> p1, std::pair<int,int> p2) {
-  return ((p2.first - p1.first) * (p2.first - p1.first)) +
-         ((p2.second - p1.second) * (p2.second - p1.second));
-}
 
 Path nearest_neighbor(Board b) {
   std::vector<bool> visited(b.pts.size(), false);
@@ -65,6 +79,7 @@ Path nearest_neighbor(Board b) {
     path.pts.push_back(b.pts[min_pt_i]);
     visited[min_pt_i] = true;
   }
+  path.pts.push_back(b.pts[0]);
   return path;
 }
 
@@ -74,7 +89,8 @@ struct D2P {
   int pt2_i;
 };
 bool operator<(const D2P lhs, const D2P rhs) {
-  return lhs.dist < rhs.dist;
+  // Reversed because we want shorter edges to have higher priority.
+  return lhs.dist > rhs.dist;
 }
 
 Path closest_pair(Board b) {
@@ -90,39 +106,43 @@ Path closest_pair(Board b) {
   while (true) {
     auto next_pair = d2p.top();
     d2p.pop();
+    // Check if this edge could possibly be part of a cycle with the
+    // existing edges (doesn't form a T-junction)
     if (visits[next_pair.pt1_i] < 2 && visits[next_pair.pt2_i] < 2) {
       neighbors[next_pair.pt1_i].push_back(next_pair.pt2_i);
       neighbors[next_pair.pt2_i].push_back(next_pair.pt1_i);
-      // See if there's a cyclic path created by adding this edge.
+      // Now see if there's a cyclic path created by adding this edge.
       Path path = {{b.pts[next_pair.pt1_i], b.pts[next_pair.pt2_i]}};
+      bool no_path = false;
       int prev_i = next_pair.pt1_i;
       int i = next_pair.pt2_i;
-      while (true) {
-        if (neighbors[i].size() < 2) {
-          // No outgoing neighbors => path ends here.
-          break;
-        } else if (i == next_pair.pt1_i) {
-          // If the condition holds, we've looped back to pt1. Check length.
-          if (path.pts.size() < b.pts.size()) {
-            // Reject the edge if we build a too-small cycle by including it.
-            neighbors[next_pair.pt1_i].pop_back();
-            neighbors[next_pair.pt2_i].pop_back();
-            break;
-          } else {
-            return path;
-          }
+      // Trace this path as far as we can from pt2_i until we get
+      // back to pt1_i.
+      while (i != next_pair.pt1_i && neighbors[i].size() == 2) {
+        if (neighbors[i][0] != prev_i) {
+          path.pts.push_back(b.pts[neighbors[i][0]]);
+          prev_i = i;
+          i = neighbors[i][0];
         } else {
-          // No loop. Find the new neighbor and iterate.
-          if (neighbors[i][0] != prev_i) {
-            path.pts.push_back(b.pts[neighbors[i][0]]);
-            prev_i = i;
-            i = neighbors[i][0];
-          } else {
-            path.pts.push_back(b.pts[neighbors[i][1]]);
-            prev_i = i;
-            i = neighbors[i][1];
-          }
+          path.pts.push_back(b.pts[neighbors[i][1]]);
+          prev_i = i;
+          i = neighbors[i][1];
         }
+      }
+      // Check the path we ended up with
+      if (path.pts.size() == b.pts.size() + 1) {
+        return path;
+      } else if (i == next_pair.pt1_i && path.pts.size() < b.pts.size() + 1) {
+        // If the condition holds, we've looped back to pt1 but our cycle is
+        // too short (it doesn't include all the vertices). We need to remove
+        // this edge from consideration and try again.
+        // A fancier data structure would definitely make cycle detection
+        // easier, but I don't know it! (Why am I studying this again? :P )
+        neighbors[next_pair.pt1_i].pop_back();
+        neighbors[next_pair.pt2_i].pop_back();
+        pairs_added--;
+        visits[next_pair.pt1_i]--;
+        visits[next_pair.pt2_i]--;
       }
       pairs_added++;
       visits[next_pair.pt1_i]++;
@@ -130,6 +150,7 @@ Path closest_pair(Board b) {
     }
   }
 }
+
 
 int main() {
   Board b {10, 10, {{1, 0}, {2, 1}, {3, 1}, {8, 1}, {7, 7}, {3, 8}}};
