@@ -50,6 +50,10 @@ public:
   }
 
   float length() {
+    if (this->pts.size() < 2) {
+      return 0.0;
+    }
+
     float l = 0;
     for (int i = 0; i < this->pts.size() - 1; i++) {
       l += sqrt(dist2(this->pts[i], this->pts[i+1]));
@@ -154,12 +158,13 @@ Path closest_pair(Board b) {
 std::vector<Path> get_all_paths(
     std::vector<std::pair<int,int>> pts,
     Path acc) {
-  std::cout << "acc @ get_all_paths:" << std::endl;
-  acc.print();
+  if (pts.empty()) {
+    acc.pts.push_back(acc.pts[0]);
+    return std::vector<Path> {acc};
+  }
   std::vector<Path> paths;
   for (int i = 0; i < pts.size(); i++) {
     acc.pts.push_back(pts[i]);
-    acc.print();
     auto pt = pts[i];
     pts.erase(pts.begin() + i);
     auto paths_with_i = get_all_paths(pts, acc);
@@ -187,12 +192,31 @@ Path brute_force(Board b) {
 
 
 int main() {
-  Board b {10, 10, {{1, 0}, {2, 1}, {3, 1}, {8, 1}, {7, 7}, {3, 8}}};
+  Board b {
+    20,
+    10,
+    {
+      // Warning: this is the highest number of points my laptop
+      // can brute-force without grinding to a halt. Don't push it!
+      {1, 0},
+      {2, 1},
+      {13, 1},
+      {15, 2},
+      {5, 4},
+      {18, 9},
+      {7, 7},
+      {3, 8},
+      {15, 3},
+    }
+  };
   b.print();
+  std::cout << "Nearest Neighbor:" << std::endl;
   auto p = nearest_neighbor(b);
   p.print();
+  std::cout << "Closest Pair:" << std::endl;
   p = closest_pair(b);
   p.print();
+  std::cout << "Brute Force:" << std::endl;
   p = brute_force(b);
   p.print();
 }
