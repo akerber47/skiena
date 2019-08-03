@@ -154,9 +154,12 @@ Path closest_pair(Board b) {
 std::vector<Path> get_all_paths(
     std::vector<std::pair<int,int>> pts,
     Path acc) {
+  std::cout << "acc @ get_all_paths:" << std::endl;
+  acc.print();
   std::vector<Path> paths;
   for (int i = 0; i < pts.size(); i++) {
     acc.pts.push_back(pts[i]);
+    acc.print();
     auto pt = pts[i];
     pts.erase(pts.begin() + i);
     auto paths_with_i = get_all_paths(pts, acc);
