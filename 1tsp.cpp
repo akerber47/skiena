@@ -151,6 +151,37 @@ Path closest_pair(Board b) {
   }
 }
 
+std::vector<Path> get_all_paths(
+    std::vector<std::pair<int,int>> pts,
+    Path acc) {
+  std::vector<Path> paths;
+  for (int i = 0; i < pts.size(); i++) {
+    acc.pts.push_back(pts[i]);
+    auto pt = pts[i];
+    pts.erase(pts.begin() + i);
+    auto paths_with_i = get_all_paths(pts, acc);
+    paths.insert(paths.end(), paths_with_i.begin(), paths_with_i.end());
+    pts.insert(pts.begin() + i, pt);
+    acc.pts.pop_back();
+  }
+  return paths;
+}
+
+Path brute_force(Board b) {
+  std::vector<Path> all_paths = get_all_paths(b.pts, Path {{}});
+  Path min_path {{}};
+  double min_length =
+    std::numeric_limits<double>::max();
+  for (auto &p: all_paths) {
+    double l = p.length();
+    if (l < min_length) {
+      min_length = l;
+      min_path = p;
+    }
+  }
+  return min_path;
+}
+
 
 int main() {
   Board b {10, 10, {{1, 0}, {2, 1}, {3, 1}, {8, 1}, {7, 7}, {3, 8}}};
@@ -158,5 +189,7 @@ int main() {
   auto p = nearest_neighbor(b);
   p.print();
   p = closest_pair(b);
+  p.print();
+  p = brute_force(b);
   p.print();
 }
