@@ -1,10 +1,11 @@
 
-BINS=0test 1tsp
+BINS=0test 1tsp 1lotto
 
 all: $(BINS)
 
 0test: 0test.o
 1tsp: 1tsp.o
+1lotto: 1lotto.o
 
 CXX=clang++
 CXXFLAGS=--std=c++17 -g
